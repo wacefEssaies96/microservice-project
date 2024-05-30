@@ -1,0 +1,139 @@
+version: "2.21.0"
+services:
+      
+  Evenement:
+    container_name: evenement
+    build: .\ms_evenement
+    ports:
+      - "8191:8091"
+    hostname: evenement
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://docker-mysql_1:3306/evenementDB?createDatabaseIfNotExist=true&userSSL=false&max_allowed_packet=15728640
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://Eureka:8761/eureka
+    image: "evenement"
+    depends_on:
+      - Eureka
+      - docker-mysql_1
+
+  Publication:
+    container_name: publication
+    build: .\MSPublication-2
+    ports:
+      - "8185:8085"
+    hostname: publication
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://docker-mysql_2:3306/publicationDB?createDatabaseIfNotExist=true&userSSL=false&max_allowed_packet=15728640
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://Eureka:8761/eureka
+    image: "publication"
+    depends_on:
+      - Eureka
+      - docker-mysql_2
+
+  Page:
+    container_name: ms-page
+    build: .\ms-page
+    ports:
+      - "8183:8083"
+    hostname: ms-page
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://docker-mysql_3:3306/pageDB?createDatabaseIfNotExist=true&userSSL=false&max_allowed_packet=15728640
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://Eureka:8761/eureka/
+    image: "ms-page"
+    depends_on:
+      - Eureka
+      - docker-mysql_3
+  
+  Commentaire:
+     container_name: commentaire
+     build: .\commentaire
+     ports:
+       - "8189:8089"
+     hostname: commentaire
+     environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+     image: "commentaire"
+     depends_on:
+       - Eureka
+
+  Groupe:
+    container_name: groupe
+    build: .\Groupe
+    ports:
+      - "8187:8087"
+    hostname: groupe
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://Eureka:8761/eureka/
+    image: "groupe"
+    depends_on:
+      - Eureka
+        
+  Eureka:
+    container_name: eureka
+    build: .\EurekaServer
+    image: "eureka"
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://Eureka:8761/eureka/
+      
+  ApiGateway:
+    container_name: ApiGateway
+    build: .\APIgateway
+    image: "gateway"
+    restart: always
+    depends_on:
+      - Eureka
+      - docker-mysql_1
+      - docker-mysql_2
+      - docker-mysql_3
+    ports:
+      - "8181:8081"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://Eureka:8761/eureka/
+      - EUREKA_INSTANCE_LEASERENEWALINTERVALINSECONDS=10
+      - EUREKA_INSTANCE_LEASEEXPIRATIONDURATIONINSECONDS=30
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_ID=ms-page
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://ms-page:8083
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0=Path=/PageService/api/Pages/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_ID=PublicationMS
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_URI=http://PublicationMS:8085
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0=Path=/publicationMS/publication/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=Groupe
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://Groupe:8087
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/groupe/groupes/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_3_ID=CommentServices
+      - SPRING_CLOUD_GATEWAY_ROUTES_3_URI=http:/CommentServices:8089
+      - SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0=Path=/CommentServices/api/comments/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_4_ID=ms-evenement
+      - SPRING_CLOUD_GATEWAY_ROUTES_4_URI=http://ms-evenement:8091
+      - SPRING_CLOUD_GATEWAY_ROUTES_4_PREDICATES_0=Path=/EvenementService/evenement/**
+  
+  docker-mysql_1:
+    image: "mysql:5.6"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=evenementDB
+    ports:
+      - 3307:3306
+
+  docker-mysql_2:
+    image: "mysql:5.6"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=publicationDB
+    ports:
+      - 3308:3306
+
+  docker-mysql_3:
+    image: "mysql:5.6"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=pageDB
+    ports:
+      - 3309:3306

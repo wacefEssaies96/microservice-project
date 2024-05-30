@@ -1,0 +1,4 @@
+FROM openjdk:8
+EXPOSE 8187
+ADD target/Groupe-0.0.1-SNAPSHOT.jar groupe
+ENTRYPOINT ["java", "-jar", "groupe"]
